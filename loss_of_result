@@ -1,0 +1,57 @@
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Main {
+    // Цель: сколько раз всего нужно прибавить единицу (100 миллионов)
+    private static final int HUNDRED_MILLION = 100_000_000;
+
+    // Атомарный счётчик, нужен только как "стоп-сигнал".
+    // Он безопасен для потоков, поэтому цикл выполнится ровно 100 млн раз суммарно
+    private static final AtomicInteger counter = new AtomicInteger();
+
+    // Общая переменная БЕЗ синхронизации.
+    // Оба потока меняют её одновременно, поэтому часть прибавок будет потеряна
+    private static int i;
+
+    // Проверка: пора ли останавливаться.
+    // Каждый вызов увеличивает счётчик на 1 и возвращает true,
+    // когда набралось больше 100 млн
+    static boolean stop() {
+        return counter.incrementAndGet() > HUNDRED_MILLION;
+    }
+
+    // Поток, который прибавляет 1 к общей переменной i
+    static class InterferenceThread extends Thread {
+        // run() выполняется, когда мы вызываем start()
+        public void run() {
+            // Работаем, пока stop() не вернёт true
+            while (!stop()) {
+                // Операция НЕ атомарна, она состоит из трёх шагов:
+                // 1) прочитать i, 2) прибавить 1, 3) записать обратно.
+                // Если два потока прочитают одно и то же значение,
+                // оба запишут одинаковый результат, и одна прибавка пропадёт
+                i++;
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // Создаём два потока, которые работают с одной и той же переменной i
+        InterferenceThread thread1 = new InterferenceThread();
+        InterferenceThread thread2 = new InterferenceThread();
+
+        // Запускаем оба потока, они работают одновременно
+        thread1.start();
+        thread2.start();
+
+        // join() заставляет main подождать, пока потоки закончат работу
+        thread1.join();
+        thread2.join();
+
+        // Ожидали ровно 100 млн
+        System.out.println("Expected: " + HUNDRED_MILLION);
+        // Получили меньше из-за гонки потоков
+        System.out.println("Result: " + i);
+        // Разница показывает, сколько прибавок потерялось
+        System.out.println("Lost: " + (HUNDRED_MILLION - i));
+    }
+}
