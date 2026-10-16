@@ -21,7 +21,7 @@ public class Main {
     // Поток, который прибавляет 1 к общей переменной i
     static class InterferenceThread extends Thread {
         // run() выполняется, когда мы вызываем start()
-        @id86240433 (@Override)
+        @Override
         public void run() {
             // Работаем, пока shouldStop() не вернёт true
             while (!shouldStop()) {
