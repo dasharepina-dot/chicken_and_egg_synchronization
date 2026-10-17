@@ -1,0 +1,23 @@
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Введите сколько у вас денег: ");
+        Scanner in = new Scanner(System.in);
+        int money = in.nextInt();
+        System.out.println("Введите цену за шоколадку: ");
+        int price = in.nextInt();
+        System.out.println("Введите кол-во обёрток для получения 1 шоколадки: ");
+        int wrap = in.nextInt();
+        int priceChocolates = money/price;
+        System.out.println(priceChocolates + " получите шоколадок за деньги");
+        int total = priceChocolates;
+        int wrappers = priceChocolates;
+        while (wrappers >= wrap){
+            int newChovolates = wrappers / wrap;
+            total += newChovolates;
+            wrappers = wrappers%wrap + newChovolates;
+        }
+        System.out.println(total +" получите всего шоколадок ");
+    }
+}
