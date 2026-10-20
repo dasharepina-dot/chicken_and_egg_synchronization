@@ -1,0 +1,52 @@
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Main {
+    // Цель: сколько раз всего нужно прибавить единицу (100 миллионов)
+    private static final int HUNDRED_MILLION = 100_000_000;
+
+    // Атомарный счётчик, нужен только как "стоп-сигнал"
+    private static final AtomicInteger counter = new AtomicInteger();
+
+    // Общая переменная, которую увеличивают оба потока
+    private static int i;
+
+    // Проверка: пора ли останавливаться
+    static boolean shouldStop() {
+        return counter.incrementAndGet() > HUNDRED_MILLION;
+    }
+
+    // synchronized: пока один поток выполняет этот метод,
+    // второй ждёт своей очереди, поэтому прибавки не теряются
+    static synchronized void increment() {
+        i++;
+    }
+
+    // Поток, который прибавляет 1 к общей переменной i
+    static class InterferenceThread extends Thread {
+        @Override
+        public void run() {
+            // Работаем, пока shouldStop() не вернёт true
+            while (!shouldStop()) {
+                increment();
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // Создаём два потока, которые работают с одной и той же переменной i
+        InterferenceThread thread1 = new InterferenceThread();
+        InterferenceThread thread2 = new InterferenceThread();
+
+        // Запускаем оба потока
+        thread1.start();
+        thread2.start();
+
+        // join() заставляет main подождать, пока потоки закончат работу
+        thread1.join();
+        thread2.join();
+
+        System.out.println("Ожидаемый: " + HUNDRED_MILLION);
+        System.out.println("Результат: " + i);
+        System.out.println("Потерянный: " + (HUNDRED_MILLION - i));
+    }
+}
