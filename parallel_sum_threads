@@ -1,0 +1,68 @@
+import java.util.Random;
+
+public class ParallelSum {
+
+    static final int SIZE = 1000;  // размер списка
+    static final int THREADS = 4;  // количество потоков
+
+    // Поток считает сумму своего диапазона
+    static class SumThread extends Thread {
+        int[] numbers;
+        int from;
+        int to;
+        long result;
+
+        SumThread(int[] numbers, int from, int to) {
+            this.numbers = numbers;
+            this.from = from;
+            this.to = to;
+        }
+
+        public void run() {
+            for (int i = from; i < to; i++) {
+                result += numbers[i];
+            }
+            System.out.println("Диапазон " + from + "-" + to + ", сумма = " + result);
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+
+        // Заполняем список случайными числами
+        int[] numbers = new int[SIZE];
+        Random random = new Random();
+        for (int i = 0; i < SIZE; i++) {
+            numbers[i] = random.nextInt(100);
+        }
+
+        // Последовательная сумма
+        long start = System.nanoTime();
+        long sequentialSum = 0;
+        for (int i = 0; i < SIZE; i++) {
+            sequentialSum += numbers[i];
+        }
+        long sequentialTime = (System.nanoTime() - start) / 1000; // в микросекундах
+
+        // Параллельная сумма
+        start = System.nanoTime();
+        SumThread[] threads = new SumThread[THREADS];
+        int part = SIZE / THREADS; // размер диапазона: 250
+
+        for (int i = 0; i < THREADS; i++) {
+            threads[i] = new SumThread(numbers, i * part, (i + 1) * part);
+            threads[i].start();
+        }
+
+        long parallelSum = 0;
+        for (int i = 0; i < THREADS; i++) {
+            threads[i].join(); // ждём поток
+            parallelSum += threads[i].result;
+        }
+        long parallelTime = (System.nanoTime() - start) / 1000; // в микросекундах
+
+        // Результат
+        System.out.println();
+        System.out.println("Последовательно: " + sequentialSum + ", время " + sequentialTime + " мкс");
+        System.out.println("Параллельно: " + parallelSum + ", время " + parallelTime + " мкс");
+    }
+}
