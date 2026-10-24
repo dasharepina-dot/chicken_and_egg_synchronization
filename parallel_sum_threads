@@ -20,14 +20,18 @@ public class ParallelSum {
 
         public void run() {
             for (int i = from; i < to; i++) {
+                // Если поток прервали, останавливаем подсчёт
+                if (isInterrupted()) {
+                    System.out.println("Диапазон " + from + "-" + to + " прерван, сумма до остановки = " + result);
+                    return;
+                }
                 result += numbers[i];
             }
             System.out.println("Диапазон " + from + "-" + to + ", сумма = " + result);
         }
     }
 
-    public static void main(String[] args) throws InterruptedException {
-
+    public static void main(String[] args) {
         // Заполняем список случайными числами
         int[] numbers = new int[SIZE];
         Random random = new Random();
@@ -53,10 +57,18 @@ public class ParallelSum {
             threads[i].start();
         }
 
+
+        // threads[3].interrupt();
+
         long parallelSum = 0;
-        for (int i = 0; i < THREADS; i++) {
-            threads[i].join(); // ждём поток
-            parallelSum += threads[i].result;
+        try {
+            for (int i = 0; i < THREADS; i++) {
+                threads[i].join(); // ждём поток
+                parallelSum += threads[i].result;
+            }
+        } catch (InterruptedException e) {
+            // сюда попадём, если прервали сам main, пока он ждал потоки
+            System.out.println("Ожидание потоков прервано");
         }
         long parallelTime = (System.nanoTime() - start) / 1000; // в микросекундах
 
