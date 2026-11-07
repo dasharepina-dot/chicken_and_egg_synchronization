@@ -1,0 +1,137 @@
+import java.io.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+    private static final String Foto1 = "https://wallpapers.com/images/hd/welsh-cute-corgi-puppy-ywlt5fl2w927y6gy.jpg";
+    private static final String Foto2 = "https://i.pinimg.com/736x/72/10/ce/7210cef5448648970e90646f0667545b.jpg";
+    private static final String Foto3 = "https://i.pinimg.com/originals/66/13/06/6613061f237a064ba451d262ecfe55e1.jpg";
+    private static final String PathFoto = "all_foto/";
+
+    private static final ProcessHandle currentProcess = ProcessHandle.current();
+    private static final List<Integer> process = new ArrayList<>();
+
+    private static Process Foto1_1 = null;
+    private static Process Foto2_2 = null;
+    private static Process Foto3_3 = null;
+
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+
+    public static void main(String[] args) throws IOException {
+        System.out.println("Скачивание фото");
+        System.out.println("1. Скачать фото собачки");
+        System.out.println("2. Скачать фото кошечки");
+        System.out.println("3. Скачать фото ежика");
+
+        Scanner scanner = new Scanner(System.in);
+        int input = scanner.nextInt();
+
+        new File(PathFoto).mkdirs();
+
+        switch (input) {
+            case 1 -> {
+                DownloadingOne(Foto1, PathFoto + "foto1.jpg");
+                Foto1_1 = open(PathFoto + "foto1.jpg", "Собачка");
+            }
+            case 2 -> {
+                DownloadingOne(Foto2, PathFoto + "foto2.jpg");
+                Foto2_2 = open(PathFoto + "foto2.jpg", "Кошечка");
+            }
+            case 3 -> {
+                DownloadingOne(Foto3, PathFoto + "foto3.jpg");
+                Foto3_3 = open(PathFoto + "foto3.jpg", "Ежик");
+            }
+            default -> System.out.println("Неверный ввод данных");
+        }
+
+        showProcessInfo();
+    }
+
+    static void DownloadingOne(String way, String pathFoto) {
+        try {
+            downloadUsingHttpClient(way, pathFoto);
+            System.out.println("Фото успешно скачено " + pathFoto);
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Ошибка при загрузке файла " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void downloadUsingHttpClient(String strUrl, String filePath)
+            throws IOException, InterruptedException {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(strUrl))
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .timeout(Duration.ofSeconds(30))
+                .GET()
+                .build();
+
+        HttpResponse<Path> response = httpClient.send(
+                request,
+                HttpResponse.BodyHandlers.ofFile(Path.of(filePath))
+        );
+
+        if (response.statusCode() != 200) {
+            Files.deleteIfExists(Path.of(filePath));
+            throw new IOException("Сервер вернул код ответа " + response.statusCode());
+        }
+    }
+
+    private static Process open(String filePath, String name) throws IOException {
+        File file = new File(filePath);
+
+        if (file.exists()) {
+            ProcessBuilder pb = new ProcessBuilder();
+            pb.command("cmd.exe", "/c", "start", filePath);
+
+            System.out.println("Открыта фотография " + name);
+            return pb.start();
+        } else {
+            System.out.println("Файл не найден " + filePath);
+            return null;
+        }
+    }
+
+    private static void showProcessInfo() {
+        System.out.println("Информация о текущих процессах:");
+
+        if (Foto1_1 != null && Foto1_1.isAlive()) {
+            System.out.println("Процесс 1, Собачка");
+            System.out.println("PID : " + Foto1_1.pid());
+            process.add((int) Foto1_1.pid());
+            System.out.println("Активен : " + Foto1_1.isAlive());
+        }
+
+        if (Foto2_2 != null && Foto2_2.isAlive()) {
+            System.out.println("Процесс 2, Кошечка");
+            System.out.println("PID : " + Foto2_2.pid());
+            process.add((int) Foto2_2.pid());
+            System.out.println("Активен : " + Foto2_2.isAlive());
+        }
+
+        if (Foto3_3 != null && Foto3_3.isAlive()) {
+            System.out.println("Процесс 3, Ежик");
+            System.out.println("PID : " + Foto3_3.pid());
+            process.add((int) Foto3_3.pid());
+            System.out.println("Активен : " + Foto3_3.isAlive());
+        }
+
+        System.out.println("Текущий PID: " + currentProcess.pid());
+        System.out.println("Активен: " + currentProcess.isAlive());
+        System.out.println("Дочерние процессы: " + currentProcess.children().count());
+        System.out.println("Информация: " + currentProcess.info());
+        System.out.println("Список PID процессов: " + process);
+    }
+}
